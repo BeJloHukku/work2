@@ -1,6 +1,5 @@
 import requests
 from typing import Any, Dict
-import re
 
 
 class DependencyAnalyzer:
@@ -8,7 +7,7 @@ class DependencyAnalyzer:
     
     def __init__(self, package_name: str, repository_url: str = None):
         self.package_name = package_name
-        self.repository_url = repository_url or self.PYPI_API_URL
+        self.repository_url = repository_url or self.NPM_API_URL
     
     def get_dependencies(self) -> Dict[str, Any]:
 

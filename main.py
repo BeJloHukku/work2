@@ -3,6 +3,7 @@ import yaml
 from pathlib import Path
 from typing import Any
 from dependency_analyzer import DependencyAnalyzer
+from dependency_graph import DependencyGraphBuilder, TestRepositoryLoader, format_graph
 
 
 class ConfigValidator:
@@ -136,20 +137,59 @@ class DependencyVisualizer:
         
         self.print_config()
         
+        # Анализ зависимостей
         if self.config['repository_mode'] == 'online':
-            self.analyze_dependencies()
+            self.analyze_dependencies_online()
+        elif self.config['repository_mode'] == 'offline':
+            self.analyze_dependencies_offline()
         
         return 0
     
-    def analyze_dependencies(self):
+    def analyze_dependencies_online(self):
         
         package_name = self.config['package_name']
         repository_url = self.config['repository_url']
+        max_depth = self.config['max_depth']
         
+        # Получаем прямые зависимости
         analyzer = DependencyAnalyzer(package_name, repository_url)
         deps_info = analyzer.get_dependencies()
         
         print(DependencyAnalyzer.show_dependencies(deps_info))
+        
+        # Строим полный граф зависимостей
+        if deps_info.get('success'):
+            
+            builder = DependencyGraphBuilder(analyzer, max_depth)
+            graph = builder.build_graph_recursive(package_name)
+            
+            print(format_graph(graph))
+        
+    
+    def analyze_dependencies_offline(self):
+        
+        package_name = self.config['package_name']
+        repository_path = self.config['repository_url']
+        max_depth = self.config['max_depth']
+        
+        try:
+            # Загружаем тестовый репозиторий
+            loader = TestRepositoryLoader(package_name, repository_path)
+            
+            # Получаем прямые зависимости
+            deps_info = loader.get_dependencies()
+            print(DependencyAnalyzer.show_dependencies(deps_info))
+            
+            # Строим полный граф
+            if deps_info.get('success'):
+                builder = DependencyGraphBuilder(loader, max_depth)
+                graph = builder.build_graph_recursive(package_name)
+                
+                print(format_graph(graph))
+            
+            
+        except (FileNotFoundError, ValueError) as e:
+            print(f"\nОшибка: {e}\n")
 
 
 def main():

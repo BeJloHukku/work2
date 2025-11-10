@@ -1,0 +1,7 @@
+# Тестовый режим: глубокий граф
+package_name: "A"
+repository_url: "test_repo_deep.json"
+repository_mode: "offline"
+output_file: "graph_deep.png"
+output_format: "ascii"
+max_depth: 10

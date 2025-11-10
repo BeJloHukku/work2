@@ -1,7 +1,8 @@
 import sys
 import yaml
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
+from dependency_analyzer import DependencyAnalyzer
 
 
 class ConfigValidator:
@@ -19,7 +20,7 @@ class ConfigValidator:
     VALID_FORMAT = ['ascii']
     
     @staticmethod
-    def validate(config: Dict[str, Any]) -> tuple[bool, list[str]]:
+    def validate(config: dict[str, Any]) -> tuple[bool, list[str]]:
         errors = []
         
         for field in ConfigValidator.REQUIRED_FIELDS:
@@ -135,7 +136,20 @@ class DependencyVisualizer:
         
         self.print_config()
         
+        if self.config['repository_mode'] == 'online':
+            self.analyze_dependencies()
+        
         return 0
+    
+    def analyze_dependencies(self):
+        
+        package_name = self.config['package_name']
+        repository_url = self.config['repository_url']
+        
+        analyzer = DependencyAnalyzer(package_name, repository_url)
+        deps_info = analyzer.get_dependencies()
+        
+        print(DependencyAnalyzer.show_dependencies(deps_info))
 
 
 def main():

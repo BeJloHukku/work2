@@ -154,6 +154,7 @@ def format_graph(graph: DependencyGraph) -> str:
     return "\n".join(output)
 
 
+
 def format_tree(graph: DependencyGraph, package: str, prefix: str, visited: Set[str]) -> str:
     output = []
     

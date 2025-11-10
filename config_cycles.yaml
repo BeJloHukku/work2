@@ -1,7 +1,8 @@
 # Тестовый режим: граф с циклами
 package_name: "A"
-repository_url: "test_repo_cycles.json"
+repository_url: "cycles.json"
 repository_mode: "offline"
 output_file: "graph_cycles.png"
 output_format: "ascii"
 max_depth: 5
+show_load_order: true

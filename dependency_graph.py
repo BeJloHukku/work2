@@ -172,3 +172,93 @@ def format_tree(graph: DependencyGraph, package: str, prefix: str, visited: Set[
         output.append(format_tree(graph, dep, prefix + extension, visited.copy()))
     
     return "\n".join(output)
+
+
+def calculate_load_order(graph: DependencyGraph) -> Dict[str, Any]:
+    # Строим обратный граф: пакет -> кто от него зависит
+    reverse_graph: Dict[str, List[str]] = {}
+    in_degree: Dict[str, int] = {}
+    
+    all_packages = graph.get_all_packages()
+    
+    for package in all_packages:
+        reverse_graph[package] = []
+        in_degree[package] = 0
+    
+    # Подсчет входящих рёбер
+    for package, dependencies in graph.graph.items():
+        for dep in dependencies:
+            if dep not in reverse_graph:
+                reverse_graph[dep] = []
+            reverse_graph[dep].append(package)
+            in_degree[package] = in_degree.get(package, 0) + 1
+    
+    # Находим пакеты без зависимостей
+    queue = [pkg for pkg in all_packages if in_degree[pkg] == 0]
+    load_order = []
+    levels_dict: Dict[int, List[str]] = {}
+    current_level = 0
+    
+    while queue:
+        current_level_packages = queue[:]
+        levels_dict[current_level] = current_level_packages
+        queue = []
+        
+        for package in current_level_packages:
+            load_order.append(package)
+            
+            # Уменьшаем in-degree для зависимых пакетов
+            for dependent in reverse_graph.get(package, []):
+                in_degree[dependent] -= 1
+                if in_degree[dependent] == 0:
+                    queue.append(dependent)
+        
+        current_level += 1
+    
+    # Проверяем наличие нерешенных пакетов\
+    unresolved = [pkg for pkg in all_packages if in_degree[pkg] > 0]
+    
+    return {
+        'order': load_order,
+        'levels': levels_dict,
+        'has_cycles': len(unresolved) > 0,
+        'unresolved': unresolved
+    }
+
+
+def format_load_order(graph: DependencyGraph) -> str:
+    output = []
+    
+    load_info = calculate_load_order(graph)
+    
+    output.append("Порядок загрузки зависимостей")
+    
+    output.append(f"\nКорневой пакет: {graph.root_package}")
+    output.append(f"Всего пакетов для загрузки: {len(load_info['order'])}")
+    output.append(f"Уровней загрузки: {len(load_info['levels'])}")
+    
+    if load_info['has_cycles']:
+        output.append(f"Нерешенных пакетов: {len(load_info['unresolved'])}")
+        output.append(f"Пакеты в циклах: {', '.join(load_info['unresolved'])}")
+    
+    output.append("Порядок загрузки по уровням:")
+    
+    for level, packages in load_info['levels'].items():
+        output.append(f"\n** Уровень {level}: ({len(packages)} пакет(ов))")
+        for i, pkg in enumerate(packages, 1):
+            deps = graph.get_dependencies(pkg)
+            deps_str = f" -> зависит от: {', '.join(deps)}" if deps else " (без зависимостей)"
+            output.append(f"   {i}. {pkg}{deps_str}")
+    
+    output.append("Линейный порядок загрузки:")
+    
+    for i, pkg in enumerate(load_info['order'], 1):
+        output.append(f"{i}. {pkg}")
+    
+    if load_info['unresolved']:
+        output.append("Пакеты, не включенные в порядок загрузки (циклы):")
+        for pkg in load_info['unresolved']:
+            deps = graph.get_dependencies(pkg)
+            output.append(f"* {pkg} -> {', '.join(deps)}")
+    
+    return "\n".join(output)

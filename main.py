@@ -3,7 +3,7 @@ import yaml
 from pathlib import Path
 from typing import Any
 from dependency_analyzer import DependencyAnalyzer
-from dependency_graph import DependencyGraphBuilder, TestRepositoryLoader, format_graph
+from dependency_graph import DependencyGraphBuilder, TestRepositoryLoader, format_graph, format_load_order
 
 
 class ConfigValidator:
@@ -124,6 +124,7 @@ class DependencyVisualizer:
         print(f"Выходной файл           : {self.config['output_file']}")
         print(f"Формат вывода           : {self.config['output_format']}")
         print(f"Максимальная глубина    : {self.config['max_depth']}")
+        print(f"Показать порядок загрузки: {self.config.get('show_load_order', False)}")
         
     
     def run(self):
@@ -150,6 +151,7 @@ class DependencyVisualizer:
         package_name = self.config['package_name']
         repository_url = self.config['repository_url']
         max_depth = self.config['max_depth']
+        show_load_order = self.config.get('show_load_order', False)
         
         # Получаем прямые зависимости
         analyzer = DependencyAnalyzer(package_name, repository_url)
@@ -164,6 +166,10 @@ class DependencyVisualizer:
             graph = builder.build_graph_recursive(package_name)
             
             print(format_graph(graph))
+            
+            # Выводим порядок загрузки, если требуется
+            if show_load_order:
+                print(format_load_order(graph))
         
     
     def analyze_dependencies_offline(self):
@@ -171,6 +177,7 @@ class DependencyVisualizer:
         package_name = self.config['package_name']
         repository_path = self.config['repository_url']
         max_depth = self.config['max_depth']
+        show_load_order = self.config.get('show_load_order', False)
         
         try:
             # Загружаем тестовый репозиторий
@@ -186,6 +193,10 @@ class DependencyVisualizer:
                 graph = builder.build_graph_recursive(package_name)
                 
                 print(format_graph(graph))
+                
+                # Выводим порядок загрузки, если требуется
+                if show_load_order:
+                    print(format_load_order(graph))
             
             
         except (FileNotFoundError, ValueError) as e:

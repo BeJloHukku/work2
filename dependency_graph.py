@@ -11,10 +11,10 @@ class DependencyGraph:
     
     def __init__(self, root_package: str):
         self.root_package = root_package
-        self.graph: Dict[str, List[str]] = {}  # package -> [dependencies]
+        self.graph: Dict[str, List[str]] = {}
         self.visited: Set[str] = set()
-        self.cycles: List[List[str]] = []  # Найденные циклы
-        self.levels: Dict[str, int] = {}  # package -> depth level
+        self.cycles: List[List[str]] = []
+        self.levels: Dict[str, int] = {}
     
     def add_dependency(self, package: str, dependency: str):
         if package not in self.graph:

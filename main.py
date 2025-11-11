@@ -3,7 +3,8 @@ import yaml
 from pathlib import Path
 from typing import Any
 from dependency_analyzer import DependencyAnalyzer
-from dependency_graph import DependencyGraphBuilder, TestRepositoryLoader, format_graph, format_load_order
+from dependency_graph import (DependencyGraphBuilder, TestRepositoryLoader, 
+                               format_graph, format_load_order, visualize_graph)
 
 
 class ConfigValidator:
@@ -152,6 +153,7 @@ class DependencyVisualizer:
         repository_url = self.config['repository_url']
         max_depth = self.config['max_depth']
         show_load_order = self.config.get('show_load_order', False)
+        output_file = self.config.get('output_file')
         
         # Получаем прямые зависимости
         analyzer = DependencyAnalyzer(package_name, repository_url)
@@ -167,9 +169,14 @@ class DependencyVisualizer:
             
             print(format_graph(graph))
             
-            # Выводим порядок загрузки, если требуется
             if show_load_order:
                 print(format_load_order(graph))
+            
+            # Визуализация
+            if output_file:
+                if output_file.endswith('.png'):
+                    output_file = output_file[:-4]
+                print(visualize_graph(graph, output_file, show_tree=False))
         
     
     def analyze_dependencies_offline(self):
@@ -178,6 +185,7 @@ class DependencyVisualizer:
         repository_path = self.config['repository_url']
         max_depth = self.config['max_depth']
         show_load_order = self.config.get('show_load_order', False)
+        output_file = self.config.get('output_file')
         
         try:
             # Загружаем тестовый репозиторий
@@ -194,8 +202,14 @@ class DependencyVisualizer:
                 
                 print(format_graph(graph))
                 
-                # Выводим порядок загрузки, если требуется
                 if show_load_order:
+                    print(format_load_order(graph))
+                
+                # Визуализация
+                if output_file:
+                    if output_file.endswith('.png'):
+                        output_file = output_file[:-4]
+                    print(visualize_graph(graph, output_file, show_tree=False))
                     print(format_load_order(graph))
             
             

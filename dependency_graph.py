@@ -1,5 +1,10 @@
 from typing import Dict, List, Set, Any, Optional
 import json
+try:
+    import graphviz
+    GRAPHVIZ_AVAILABLE = True
+except ImportError:
+    GRAPHVIZ_AVAILABLE = False
 
 
 class DependencyGraph:
@@ -261,4 +266,88 @@ def format_load_order(graph: DependencyGraph) -> str:
             deps = graph.get_dependencies(pkg)
             output.append(f"* {pkg} -> {', '.join(deps)}")
     
+    return "\n".join(output)
+
+
+def generate_graphviz(graph: DependencyGraph) -> Optional[str]:
+    if not GRAPHVIZ_AVAILABLE:
+        return None
+    
+    dot = graphviz.Digraph(comment=f'Dependency Graph: {graph.root_package}')
+    
+    # Настройки графа
+    dot.attr(rankdir='TB')
+    dot.attr('node', shape='box', style='rounded,filled', fillcolor='lightblue')
+    dot.attr('edge', color='gray', arrowsize='0.7')
+    
+    # Корневой узел особый
+    dot.node(graph.root_package, graph.root_package, fillcolor='lightgreen', style='rounded,filled,bold')
+    
+    all_packages = graph.get_all_packages()
+    for pkg in all_packages:
+        if pkg != graph.root_package:
+            if not graph.get_dependencies(pkg):
+                dot.node(pkg, pkg, fillcolor='lightyellow')
+            else:
+                dot.node(pkg, pkg)
+    
+    # Добавляем рёбра
+    visited_edges = set()
+    for package, dependencies in graph.graph.items():
+        for dep in dependencies:
+            edge = (package, dep)
+            if edge not in visited_edges:
+                dot.edge(package, dep)
+                visited_edges.add(edge)
+    
+    # Выделяем циклы красным цветом
+    if graph.cycles:
+        for cycle in graph.cycles:
+            for i in range(len(cycle) - 1):
+                dot.edge(cycle[i], cycle[i + 1], color='red', penwidth='2.0')
+    
+    return dot.source
+
+
+def save_graph_image(graph: DependencyGraph, output_file: str, format: str = 'png') -> bool:
+    if not GRAPHVIZ_AVAILABLE:
+        return False
+    
+    try:
+        dot_source = generate_graphviz(graph)
+        if not dot_source:
+            return False
+        
+        dot_file = output_file if output_file.endswith('.dot') else f"{output_file}.dot"
+        with open(dot_file, 'w', encoding='utf-8') as f:
+            f.write(dot_source)
+        print(f"\nDOT файл сохранён: {dot_file}")
+        
+        try:
+            dot = graphviz.Source(dot_source)
+            
+            # Убираем расширение если оно есть
+            if output_file.endswith(f'.{format}'):
+                output_file = output_file[:-len(f'.{format}')]
+            
+            dot.render(output_file, format=format, cleanup=True)
+            print(f"[OK] Граф сохранён: {output_file}.{format}")
+            return True
+        except graphviz.backend.execute.ExecutableNotFound:
+            return False
+        
+    except Exception as e:
+        print(f"\nОшибка при сохранении графа: {e}")
+        return False
+
+
+def visualize_graph(graph: DependencyGraph, output_file: str = None, show_tree: bool = True) -> str:
+    output = []
+        
+    if save_graph_image(graph, output_file):
+        output.append(f"Формат: PNG")
+        output.append(f"Путь: {output_file}.png")
+    else:
+        output.append("Создан только DOT файл (см. инструкцию выше)")
+
     return "\n".join(output)

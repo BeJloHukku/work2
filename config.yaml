@@ -8,6 +8,6 @@ output_file: "dependencies_graph.png"
 
 output_format: "ascii"
 
-max_depth: 3
+max_depth: 4
 
 show_load_order: true
